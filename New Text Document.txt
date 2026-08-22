@@ -1,0 +1,165 @@
+// ===============================
+// CONTEXT & MEMORY MANAGER
+// ===============================
+
+class MemoryManager {
+    constructor() {
+        this.shortTerm = this.loadShortTerm();
+        this.longTerm = this.loadLongTerm();
+    }
+
+    // -------------------------------
+    // SHORT-TERM MEMORY
+    // -------------------------------
+    addConversation(role, content) {
+        this.shortTerm.conversation.push({
+            role,
+            content,
+            timestamp: new Date().toISOString()
+        });
+
+        // Keep only the latest 10 messages
+        if (this.shortTerm.conversation.length > 10) {
+            this.shortTerm.conversation =
+                this.shortTerm.conversation.slice(-10);
+        }
+
+        this.saveShortTerm();
+    }
+
+    setTask(task) {
+        this.shortTerm.currentTask = task;
+        this.saveShortTerm();
+    }
+
+    setStep(step) {
+        this.shortTerm.currentStep = step;
+        this.saveShortTerm();
+    }
+
+    addAgentResult(agent, result) {
+        this.shortTerm.agentResults.push({
+            agent,
+            result,
+            timestamp: new Date().toISOString()
+        });
+
+        this.saveShortTerm();
+    }
+
+    getContext() {
+        return {
+            task: this.shortTerm.currentTask,
+            step: this.shortTerm.currentStep,
+            conversation: this.shortTerm.conversation,
+            agentResults: this.shortTerm.agentResults,
+            importantMemories: this.longTerm.memories
+        };
+    }
+
+    // -------------------------------
+    // LONG-TERM MEMORY
+    // -------------------------------
+    saveImportantMemory(key, value) {
+        this.longTerm.memories.push({
+            key,
+            value,
+            savedAt: new Date().toISOString()
+        });
+
+        this.saveLongTerm();
+    }
+
+    getMemory(key) {
+        return this.longTerm.memories.find(
+            memory => memory.key === key
+        );
+    }
+
+    deleteMemory(key) {
+        this.longTerm.memories =
+            this.longTerm.memories.filter(
+                memory => memory.key !== key
+            );
+
+        this.saveLongTerm();
+    }
+
+    // -------------------------------
+    // LOCAL STORAGE
+    // -------------------------------
+    saveShortTerm() {
+        sessionStorage.setItem(
+            "ai_short_term_memory",
+            JSON.stringify(this.shortTerm)
+        );
+    }
+
+    saveLongTerm() {
+        localStorage.setItem(
+            "ai_long_term_memory",
+            JSON.stringify(this.longTerm)
+        );
+    }
+
+    loadShortTerm() {
+        const data = sessionStorage.getItem(
+            "ai_short_term_memory"
+        );
+
+        return data
+            ? JSON.parse(data)
+            : {
+                currentTask: "",
+                currentStep: "",
+                conversation: [],
+                agentResults: []
+            };
+    }
+
+    loadLongTerm() {
+        const data = localStorage.getItem(
+            "ai_long_term_memory"
+        );
+
+        return data
+            ? JSON.parse(data)
+            : {
+                memories: []
+            };
+    }
+
+    clearSession() {
+        sessionStorage.removeItem(
+            "ai_short_term_memory"
+        );
+
+        this.shortTerm = {
+            currentTask: "",
+            currentStep: "",
+            conversation: [],
+            agentResults: []
+        };
+    }
+
+    clearAllMemory() {
+        sessionStorage.removeItem(
+            "ai_short_term_memory"
+        );
+
+        localStorage.removeItem(
+            "ai_long_term_memory"
+        );
+
+        this.shortTerm = {
+            currentTask: "",
+            currentStep: "",
+            conversation: [],
+            agentResults: []
+        };
+
+        this.longTerm = {
+            memories: []
+        };
+    }
+}
